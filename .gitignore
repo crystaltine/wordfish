@@ -1,2 +1,30 @@
-# gitignore tests.py
+apikey.py
+
+outpu3.xlsx
+outpu4.xlsx
+outpu5.xlsx
+outpu6.xlsx
+.gitignore
+output.xlsx
+output - Copy.xlsx
+output2.xlsx
+test7.xlsx
+test8.xlsx
+test10.xlsx
+test9.xlsx
+cache/691070531105062962.json
+cache/1029255717389094915.json
+test4.py
 tests.py
+tests.py
+test3.py
+tests.py
+tests.py
+activityfiles/activity-general-weekly-0c02aa21.json
+activityfiles/activity-retirement-home-weekly-484c8b65.csv
+activityfiles/activity-retirement-home-weekly-484c8b65.json
+activityfiles/graphs-activity-retirement-home-weekly-484c8b65.xlsx
+queryfiles/a-general-monthly-d504b98c.csv
+queryfiles/a-general-monthly-d504b98c.xlsx
+queryfiles/nerd-retirement-home-monthly-094ff32a.csv
+queryfiles/nerd-retirement-home-monthly-96f309ed.csv
