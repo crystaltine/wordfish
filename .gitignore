@@ -5,15 +5,11 @@ outpu4.xlsx
 outpu5.xlsx
 outpu6.xlsx
 .gitignore
-output.xlsx
-output - Copy.xlsx
 output2.xlsx
 test7.xlsx
 test8.xlsx
-test10.xlsx
 test9.xlsx
 cache/691070531105062962.json
-cache/1029255717389094915.json
 test4.py
 tests.py
 tests.py
