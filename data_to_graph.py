@@ -11,7 +11,8 @@ def data_to_graph(
     query: str, 
     timeinterval: str,
     imgfilename: str,
-    __temp_filename: str = 'temp.xlsx'
+    __temp_filename: str = 'temp.xlsx',
+    proportional_chart: bool = False
     ) -> list[str] | ImageFile | None:
     """
     Notes:
@@ -45,13 +46,59 @@ def data_to_graph(
     #data_end_location = [9, 4] # J5
 
     # Get a stacked column chart graph
-    chart = workbook.add_chart({'type': 'column', 'subtype': 'stacked'})
-    chart.set_y_axis({'name': 'Frequency'})
-    chart.set_x_axis({'name': 'Date'})
+    graph_subtype = 'stacked' if not proportional_chart else 'percent_stacked'
+    chart = workbook.add_chart({'type': 'column', 'subtype': graph_subtype})
+    chart.set_y_axis({
+        'name': 'Frequency',
+        'name_font': {
+            'name': 'Posterama',
+            'color': '#F0F0F0',
+            'size': 13,
+            'bold': False,
+        },
+        'num_font': {
+            'name': 'Posterama',
+            'color': '#F0F0F0',
+            'size': 11,
+            'bold': False,
+        },
+        # dim the gridlines
+        'major_gridlines': {
+            'visible': True,
+            'line': {'color': '#333339'},
+        },
+    })
+    chart.set_x_axis({
+        'name': 'Date',
+        'name_font': {
+            'name': 'Posterama',
+            'color': '#F0F0F0',
+            'size': 12,
+            'bold': False,
+        },
+        'num_font': {
+            'name': 'Posterama',
+            'color': '#F0F0F0',
+            'size': 10,
+            'bold': False,
+            'rotation': -30,
+        },
+    })
     
-    chart.set_title({'name': f"Frequency of '{query}' by {timeinterval_word}"})
+    chart_title_header = "Frequency" if not proportional_chart else "Share"
+    
+    chart.set_title({
+        'name': f"{chart_title_header} of '{query}' by {timeinterval_word}",
+        'name_font': {
+            'name': 'Posterama',
+            'color': '#FBFBFB',
+            'size': 18,
+        },
+    })
+    
     if query == "": # activity
-        chart.set_title({'name': f"Activity by {timeinterval_word}"})
+        activity_title_header = "" if not proportional_chart else "Share of "
+        chart.set_title({'name': f"{activity_title_header}Activity by {timeinterval_word}"})
 
     def _col_name_ranges(num: int):
         """
@@ -87,10 +134,34 @@ def data_to_graph(
         chart.add_series({
             'categories': f'=Sheet1!$A$2:$A${len(timestamps) + 1}',
             'values': f'=Sheet1!${colname}$2:${colname}${len(timestamps) + 1}',
-            'name': f'=Sheet1!${colname}$1'     
+            'name': f'=Sheet1!${colname}$1',
+            
+            # Formatting
+            'gap': 50,
+            
         })
             
-    chart.set_size({'width': 961, 'height': 342})
+    chart.set_size({'width': 959, 'height': 680})
+    
+    # format chart
+    chart.set_legend({
+        'position': 'bottom',
+        'font': {
+            'name': 'Posterama',
+            'color': '#F0F0F0',
+            'size': 11,
+        }
+    })
+    chart.set_plotarea({
+        # background
+        'border': {'none': True},
+        'fill': {'color': '#192025'},
+    })
+    chart.set_chartarea({
+        # background
+        'border': {'none': True},
+        'fill': {'color': '#192025'},
+    })
     
     workbook.worksheets()[0].insert_chart('A1', chart)
     workbook.close()
@@ -98,7 +169,8 @@ def data_to_graph(
     # get chart from workbook as image
     # chart width = 14 cells, height = 16 cells (i think)
     try:
-        excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', 'A1:O17')
+        print(f"attempting to export {__temp_filename} to {imgfilename}")
+        excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', 'A1:O34')
     except:
         raise Exception() # handle this on higher levels
     # delete excel file

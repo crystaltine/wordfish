@@ -20,6 +20,9 @@ def set_role(**kwargs):
 
 def set_ignore_cache(**kwargs):
     kwargs['returnval']["ignore_cache"] = True
+    
+def set_proportional(**kwargs):
+    kwargs['returnval']["proportional"] = True
 
 options_map = {
     "-d": set_interval("d"),
@@ -27,6 +30,7 @@ options_map = {
     "-m": set_interval("m"),
     "--role": set_role,
     "--ignore-cache": set_ignore_cache,
+    "--proportional": set_proportional
 }
 
 def smart_parse_collect_command(msg: discord.Message) -> dict:
@@ -34,7 +38,7 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
     
     args = shlex.split(msgcontent)[1:]
     if len(args) <= 1: 
-        return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache]`"}
+        return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
 
     try:
         channel_id = int(args[0])
@@ -42,14 +46,15 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
         if args[0] == "here":
             channel_id = msg.channel.id
         else:
-            return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache]`"}
+            return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
     
     returnval = {
         "channel_id": channel_id,
         "query": args[1],
         "time_window": "m",
         "role": None,
-        "ignore_cache": False
+        "ignore_cache": False,
+        "proportional": False
     }
     
     # get args
@@ -68,6 +73,6 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
             except:
                 pass
             
-            return {"error": f"Invalid option: `{args[arg_ind]}`. Use `::collect <channel_id|here> <query> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache]`"}
+            return {"error": f"Invalid option: `{args[arg_ind]}`. Use `::collect <channel_id|here> <query> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
 
     return returnval

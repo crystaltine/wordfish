@@ -115,6 +115,4 @@ def export_img(fn_excel, fn_image, page=None, _range=None):
                 # http://stackoverflow.com/questions/24740062/copypicture-method-of-range-class-failed-sometimes
                 # When other (big) Excel documents are open CopyPicture fails intermittently
                 retries -= 1
-                print("retry copy")
-                #print "CopyPicture failed, retries left:", retries
                 if retries == 0: raise Exception("handle this on higher lvls lol")

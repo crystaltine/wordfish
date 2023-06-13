@@ -18,11 +18,9 @@ from parse_command import smart_parse_collect_command
 client = discord.Client(intents=discord.Intents.all())
 
 async def send_msg(channel: discord.TextChannel, message: str = "", replyto: discord.Message = None, embed: discord.Embed = None):
-    if replyto:
-        await channel.send(message, reference=replyto, embed=embed)
-    else:
-        await channel.send(message, embed=embed)
-
+    # return the sent message
+    return await channel.send(message, reference=replyto, embed=embed)
+    
 f"""
 See docstring for smart_parse_collect_command in parse_command.py for details on how to use the command
 {smart_parse_collect_command.__doc__}
@@ -36,6 +34,22 @@ def _advance_one_month(d: datetime.datetime):
 def _match_day(d: datetime.datetime, dtarget: datetime.datetime) -> bool:
     return d.day == dtarget.day and d.month == dtarget.month and d.year == dtarget.year
 
+async def _write_cache(message: discord.Message, filename: str):            
+    timestamp = datetime.datetime.now()
+    messages = []
+    async for message in message.channel.history(limit=None, oldest_first=True):
+        messages.append({
+            "content": message.content, 
+            "timestamp": message.created_at.isoformat(), 
+            "author": message.author.name,
+            "author_id": message.author.id,
+        })
+    # write timestamp at end
+    messages.append(timestamp.isoformat())
+    with open(filename, "w") as f:
+        f.write(json.dumps(messages))
+        f.close()
+
 def run_discord_bot():
     @client.event
     async def on_ready():
@@ -47,23 +61,15 @@ def run_discord_bot():
         # Ignore messages from self
         if message.author == client.user:
             return
+        
+        if message.content.startswith("::testprogressbar"):
+            embed = discord.Embed(title="Title", description="Description", color=0x00ff00)
+            sent = await send_msg(message.channel, embed=embed)
 
-        async def _write_cache(message: discord.Message, filename: str):            
-            timestamp = datetime.datetime.now()
-            messages = []
-            async for message in message.channel.history(limit=None, oldest_first=True):
-                messages.append({
-                    "content": message.content, 
-                    "timestamp": message.created_at.isoformat(), 
-                    "author": message.author.name,
-                    "author_id": message.author.id,
-                })
-            # write timestamp at end
-            messages.append(timestamp.isoformat())
-            with open(filename, "w") as f:
-                f.write(json.dumps(messages))
-                f.close()
-                
+            for i in range(10):
+                embed.description = f"Description {i}"
+                await sent.edit(embed=embed)
+        
         # Reserved for admins
         if message.content.startswith("::cache") and message.author.guild_permissions.administrator:
             filename = f"cache/{message.channel.id}.json"
@@ -89,6 +95,16 @@ def run_discord_bot():
 
         # Command run       
         if message.content.startswith("::collect"):
+            
+            # init progress bar
+            # TODO
+            # for now, only do this if cache is already created
+            
+            _pbar_len: int # number of messages to scan
+            # majority of time spent is on scanning messages
+            _curr_progress: int = 0 # current progress
+            _prev_progress: int = 0 # previous progress (Will be 0.001,0.002,...)
+            
             cmdargs = smart_parse_collect_command(message)
             
             if cmdargs.get("error"):
@@ -98,16 +114,17 @@ def run_discord_bot():
             query = cmdargs["query"]            
             channel = client.get_channel(cmdargs["channel_id"])
             role = cmdargs["role"]
+            proportional_chart = cmdargs["proportional"]
                       
             # If query is empty, then we are collecting activity
             if query == "":
                 await send_msg(
                     message.channel,
-                    f"Scanning activity in `{channel.name}`, window size: `{cmdargs['time_window']}`, surveying messages from `{'role: ' + role if role else 'everyone'}`...",
+                    f"Scanning activity in `{channel.name}`, interval: `{cmdargs['time_window']}`, messages from `{'role: ' + role if role else 'everyone'}`, proportional chart: `{proportional_chart}`...",
                     replyto=message            
                 )
                         
-                data = await collect(channel, query=None, unique=False, role=role, time=cmdargs["time_window"])
+                data = await collect(channel, query=None, __orig_msg=message, unique=False, role=role, time=cmdargs["time_window"])
                 
                 extracted_data: tuple = extract_data(data)   
                 
@@ -116,8 +133,9 @@ def run_discord_bot():
                 _filename = f"graphimgs/ACTIVITY_{channel.name}-{timeintervalname}-{randhex}.png"
                 
                 try:
-                    data_to_graph(*extracted_data, "", cmdargs["time_window"], imgfilename=_filename)
+                    data_to_graph(*extracted_data, "", cmdargs["time_window"], imgfilename=_filename, proportional_chart=proportional_chart)
                 except Exception as e:
+                    print(e)
                     await message.channel.send(f"Error: Copying the graph failed too many times. Try again soon.")
                 
                 file = discord.File(_filename, filename='image.png')
@@ -128,7 +146,7 @@ def run_discord_bot():
                       
             await send_msg(
                 message.channel,
-                f"Collecting `'{query}'` in `{channel.name}`, window size: `{cmdargs['time_window']}`, surveying messages from `{'role: ' + role if role else 'everyone'}`...",
+                f"Collecting `'{query}'` in `{channel.name}`, interval: `{cmdargs['time_window']}`, messages from `{'role: ' + role if role else 'everyone'}`, proportional chart: `{proportional_chart}`...",
                 replyto=message            
             )
             
@@ -142,7 +160,7 @@ def run_discord_bot():
                 await _write_cache(message, filename)
             
             
-            data = await collect(channel, query, unique=False, role=role, time=cmdargs["time_window"])
+            data = await collect(channel, query, __orig_msg=message, unique=False, role=role, time=cmdargs["time_window"])
             
             extracted_data: tuple = extract_data(data)   
                 
@@ -150,7 +168,7 @@ def run_discord_bot():
             timeintervalname = "monthly" if cmdargs["time_window"] == "m" else "weekly" if cmdargs["time_window"] == "w" else "daily"
             _filename = f"graphimgs/{query}-{channel.name}-{timeintervalname}-{randhex}.png"
             
-            data_to_graph(*extracted_data, cmdargs["query"], cmdargs["time_window"], imgfilename=_filename)
+            data_to_graph(*extracted_data, cmdargs["query"], cmdargs["time_window"], imgfilename=_filename, proportional_chart=proportional_chart)
             
             file = discord.File(_filename, filename='image.png')
             embed = discord.Embed()
@@ -159,8 +177,9 @@ def run_discord_bot():
     client.run(TOKEN)
 
 async def collect(
-    channel: discord.TextChannel = None, 
-    query: str = None, 
+    channel: discord.TextChannel, 
+    query: str, 
+    __orig_msg: discord.Message,
     unique = False, 
     role: str = None, 
     time: str = "w", 
@@ -245,78 +264,52 @@ async def collect(
         return None
     
     curr_timewindow_start = _timestamp_0
-    
-    _cache_flag = False
-    if use_cache:
-        try:
-            with open(f"cache/{channel.id}.json", "r") as f:
-                loaded_data = list(json.load(f))
-                
-                file_timestamp = loaded_data.pop()
-                await send_msg(
-                    channel,
-                    f"Using cache for this channel dated `{file_timestamp}`. Run with `--ignore-cache` to rescan the entire channel. Note that rescanning is slow and can only cover ~95 messages per second. Admins may run ::cache to update the cache file.",
-                )
-                
-                for message in loaded_data: # message is dict
-                    sender = message["author"]
-                    sender_id = message["author_id"]
-                    
-                    # parse timestamp
-                    timestamp = parser.parse(message["timestamp"])
-                    
-                    sender_as_member = channel.guild.get_member(sender_id)
-                    if not sender_as_member:
-                        continue
-                    
-                    if role and role not in set([r.name for r in sender_as_member.roles]):
-                        continue
-                    
-                    new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
+
+    if use_cache: # always use cache lol, too lazy to reformat
+        try: open(f"cache/{channel.id}.json", "r")
+        except FileNotFoundError: await _write_cache(__orig_msg, f"cache/{channel.id}.json")
         
-                    if new_start:
-                        curr_timewindow_start = new_start
-                        curr_data = {}
-                    
-                    ct = _search_queries(message["content"], query)
-                    curr_data[sender] = curr_data.get(sender, 0) + ct
-                _cache_flag = True
-                    
-                                    
-        except FileNotFoundError:
+        with open(f"cache/{channel.id}.json", "r") as f:
+            loaded_data = list(json.load(f))
+            
+            _pbar_len = len(loaded_data)
+            
+            file_timestamp = loaded_data.pop()
             await send_msg(
-                channel,
-                f"No cached file found. Run ::cache to create one. Continuing by scanning channel...",
+                __orig_msg.channel,
+                f"Using cache for this channel dated `{file_timestamp}`. Run with `--ignore-cache` to write a new cache. Note that rescanning is slow and can only cover ~95 messages per second.",
             )
             
+            for message in loaded_data: # message is dict
+                sender = message["author"]
+                sender_id = message["author_id"]
+                
+                # parse timestamp
+                timestamp = parser.parse(message["timestamp"])
+                
+                sender_as_member = channel.guild.get_member(sender_id)
+                if not sender_as_member:
+                    continue
+                
+                if role and role not in set([r.name for r in sender_as_member.roles]):
+                    continue
+                
+                new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
     
-    # Separate loop for month, so that other one doesnt have to check if time == "m" every time
-    if not _cache_flag:
-        async for message in channel.history(limit=None, oldest_first=True):
-            sender = message.author
-            timestamp = message.created_at
-
-            sender_as_member = message.guild.get_member(sender.id)
-            if not sender_as_member: # If sender is not in guild, skip
-                continue
-            
-            # If role is specified, skip if sender does not have role
-            if role and role not in set([r.name for r in sender_as_member.roles]):
-                # Check for role is not none, in case for some reason a server
-                # has a role with name None
-                continue
-            
-            new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
-            
-            # if new time window, data has been updated and curr_data is empty
-            if new_start:
-                curr_timewindow_start = new_start # Move to new window, keep updating as usual
-                curr_data = {}
-            
-            ct = _search_queries(message, query)
-            curr_data[sender.name] = curr_data.get(sender.name, 0) + ct
-    # Save last time window
+                if new_start:
+                    curr_timewindow_start = new_start
+                    curr_data = {}
+                
+                ct = _search_queries(message["content"], query)
+                curr_data[sender] = curr_data.get(sender, 0) + ct
+                
+                #_curr_progress += 1
+                # edit embed if delta _curr_progress/len(loaded_data) > 0.001 (every 0.1%)
+                #if _curr_progress/_pbar_len - _prev_progress > 0.001:
+    
+    # save last time window
     data[str(curr_timewindow_start)] = curr_data
+    
     return data
 
 def _search_queries(msg: discord.Message | str, target: str, get_count = True) -> int | bool:
