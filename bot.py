@@ -6,6 +6,8 @@ import apikey
 import sys, os
 from dateutil import parser
 import json_to_csv
+from extract_data import extract_data
+from data_to_graph import data_to_graph
 
 # pls no steal (idk why)
 
@@ -62,12 +64,6 @@ def run_discord_bot():
                 f.write(json.dumps(messages))
                 f.close()
                 
-        if message.content.startswith("::testembed"):
-            file = discord.File('graph.png', filename='image.png')
-            embed = discord.Embed()
-            embed.set_image(url='attachment://image.png')
-            await message.channel.send(file=file, embed=embed)
-        
         # Reserved for admins
         if message.content.startswith("::cache") and message.author.guild_permissions.administrator:
             filename = f"cache/{message.channel.id}.json"
@@ -113,15 +109,21 @@ def run_discord_bot():
                         
                 data = await collect(channel, query=None, unique=False, role=role, time=cmdargs["time_window"])
                 
+                extracted_data: tuple = extract_data(data)   
+                
                 randhex = uuid.uuid4().hex[0:8]
                 timeintervalname = "monthly" if cmdargs["time_window"] == "m" else "weekly" if cmdargs["time_window"] == "w" else "daily"
-                filename = f"activityfiles/activity-{channel.name}-{timeintervalname}-{randhex}.json"
-                with open(filename, "w") as f:
-                    json.dump(data, f)
-                    f.close()
-                json_to_csv.convert(filename)
-                await send_msg(message.channel, f"Data saved to `{filename[:-5]}.csv`", replyto=message)
+                _filename = f"graphimgs/ACTIVITY_{channel.name}-{timeintervalname}-{randhex}.png"
                 
+                try:
+                    data_to_graph(*extracted_data, "", cmdargs["time_window"], imgfilename=_filename)
+                except Exception as e:
+                    await message.channel.send(f"Error: Copying the graph failed too many times. Try again soon.")
+                
+                file = discord.File(_filename, filename='image.png')
+                embed = discord.Embed()
+                embed.set_image(url='attachment://image.png')
+                await message.channel.send(file=file, embed=embed)      
                 return            
                       
             await send_msg(
@@ -142,12 +144,18 @@ def run_discord_bot():
             
             data = await collect(channel, query, unique=False, role=role, time=cmdargs["time_window"])
             
+            extracted_data: tuple = extract_data(data)   
+                
             randhex = uuid.uuid4().hex[0:8]
             timeintervalname = "monthly" if cmdargs["time_window"] == "m" else "weekly" if cmdargs["time_window"] == "w" else "daily"
-            filename = f"queryfiles/{query}-{channel.name}-{timeintervalname}-{randhex}.csv"
-            json_to_csv.convert(raw_json_data=data, newfilename=filename)                
+            _filename = f"graphimgs/{query}-{channel.name}-{timeintervalname}-{randhex}.png"
             
-            await send_msg(message.channel, f"Data saved to `{filename}`", replyto=message)
+            data_to_graph(*extracted_data, cmdargs["query"], cmdargs["time_window"], imgfilename=_filename)
+            
+            file = discord.File(_filename, filename='image.png')
+            embed = discord.Embed()
+            embed.set_image(url='attachment://image.png')
+            await message.channel.send(file=file, embed=embed)    
     client.run(TOKEN)
 
 async def collect(
