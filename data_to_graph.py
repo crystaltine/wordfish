@@ -49,7 +49,7 @@ def data_to_graph(
     graph_subtype = 'stacked' if not proportional_chart else 'percent_stacked'
     chart = workbook.add_chart({'type': 'column', 'subtype': graph_subtype})
     chart.set_y_axis({
-        'name': 'Frequency',
+        'name': 'Frequency' if not proportional_chart else 'Share of total',
         'name_font': {
             'name': 'Posterama',
             'color': '#F0F0F0',
@@ -59,7 +59,7 @@ def data_to_graph(
         'num_font': {
             'name': 'Posterama',
             'color': '#F0F0F0',
-            'size': 11,
+            'size': 10,
             'bold': False,
         },
         # dim the gridlines
@@ -98,7 +98,14 @@ def data_to_graph(
     
     if query == "": # activity
         activity_title_header = "" if not proportional_chart else "Share of "
-        chart.set_title({'name': f"{activity_title_header}Activity by {timeinterval_word}"})
+        chart.set_title({
+            'name': f"{activity_title_header}Activity by {timeinterval_word}",
+            'name_font': {
+                'name': 'Posterama',
+                'color': '#FBFBFB',
+                'size': 18,
+            },
+        })
 
     def _col_name_ranges(num: int):
         """
@@ -112,9 +119,6 @@ def data_to_graph(
         for size in itertools.count(1):
             for s in itertools.product(ascii_uppercase, repeat=size):
                 if _ct < num:
-                    
-                    # TODO - include start variable
-                    
                     yield (chr(ord(''.join(s))+1), _ct)
                     _ct += 1
                     continue
@@ -125,6 +129,12 @@ def data_to_graph(
 
     # write names in row 1
     worksheet.write_row('B1', names)
+    
+    gap = 30
+    if len(timestamps) > 50: gap = 20
+    if len(timestamps) > 150: gap = 10
+    if len(timestamps) > 250: gap = 0
+    
 
     for colname, idx in _col_name_ranges(len(names)):
         # write data
@@ -137,11 +147,15 @@ def data_to_graph(
             'name': f'=Sheet1!${colname}$1',
             
             # Formatting
-            'gap': 50,
-            
+            'gap': gap
         })
-            
-    chart.set_size({'width': 959, 'height': 680})
+    
+    CHART_WIDTH = 1663
+    CHART_HEIGHT = 680
+    _excel_num_cols = int(round(CHART_WIDTH / 64 - 1))
+    _excel_num_rows = int(round(CHART_HEIGHT / 20))
+    
+    chart.set_size({'width': CHART_WIDTH, 'height': CHART_HEIGHT})
     
     # format chart
     chart.set_legend({
@@ -169,9 +183,9 @@ def data_to_graph(
     # get chart from workbook as image
     # chart width = 14 cells, height = 16 cells (i think)
     try:
-        print(f"attempting to export {__temp_filename} to {imgfilename}")
-        excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', 'A1:O34')
-    except:
+        end_col_letter = chr(ord('A') + _excel_num_cols)
+        excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', f'A1:{end_col_letter}{_excel_num_rows}')
+    except Exception as e:
         raise Exception() # handle this on higher levels
     # delete excel file
     #import os
