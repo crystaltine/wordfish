@@ -1,7 +1,9 @@
 import discord
 import asyncio
 import datetime
+from datetime import timezone
 from time import sleep
+from error import send_error_embed
 
 async def _send_msg(channel: discord.TextChannel, message: str = "", replyto: discord.Message = None, embed: discord.Embed = None):
     # return the sent message
@@ -63,7 +65,7 @@ class ProgressBar():
         self.embed.description = self.prefix_description + _get_progress_string(0, self.length)
         self.embed.set_image(url="attachment://image2.png")
         self.sent = await _send_msg(original_channel, embed=self.embed)
-        self._last_update_time = datetime.datetime.now()
+        self._last_update_time = datetime.datetime.now(timezone.utc)
 
     async def update(self, new_progress: float):
         
@@ -74,9 +76,9 @@ class ProgressBar():
             
             # TODO: fix it not updating the last time
             
-            if datetime.datetime.now() - self._last_update_time < datetime.timedelta(seconds=1):
+            if datetime.datetime.now(timezone.utc) - self._last_update_time < datetime.timedelta(seconds=1):
                 # wait and then do the final update
-                sleep_time = 1 - (datetime.datetime.now() - self._last_update_time).total_seconds()
+                sleep_time = 1 - (datetime.datetime.now(timezone.utc) - self._last_update_time).total_seconds()
                 sleep(sleep_time + 0.1)
 
             self.embed.title = f":white_check_mark: Done!"
@@ -89,11 +91,11 @@ class ProgressBar():
             self.embed.description += "Loading image..."
             
             await self.sent.edit(embed=self.embed)
-            self._last_update_time = datetime.datetime.now()
+            self._last_update_time = datetime.datetime.now(timezone.utc)
             # return the embed and message obj
             return self.embed, self.sent
         
-        if datetime.datetime.now() - self._last_update_time < datetime.timedelta(seconds=1):
+        if datetime.datetime.now(timezone.utc) - self._last_update_time < datetime.timedelta(seconds=1):
             # don't update too often
             return False
         
@@ -101,6 +103,6 @@ class ProgressBar():
         self.embed.description = self.prefix_description + _get_progress_string(new_progress, self.length, self.blinked)
         self.blinked = not self.blinked
         await self.sent.edit(embed=self.embed)
-        self._last_update_time = datetime.datetime.now()
+        self._last_update_time = datetime.datetime.now(timezone.utc)
         
         return True

@@ -1,4 +1,4 @@
-import re, shlex, discord
+import shlex, discord
 
 def set_interval(time_window: str = "w"):
     def inner(**kwargs):
@@ -13,14 +13,11 @@ def set_role(**kwargs):
     role_option_index = args_list.index("--role")
     
     if len(args_list) <= role_option_index + 1:
-        returnval["error"] = "Invalid role: `--role` must be followed by a role name, in quotes (without @)"
+        returnval["error"] = "Invalid role: `--role` must be followed by a role name, in quotes (without @). Run ::help for more info."
     else:
         role_to_add = str(args_list[role_option_index + 1])
         returnval["role"] = role_to_add
 
-def set_ignore_cache(**kwargs):
-    kwargs['returnval']["ignore_cache"] = True
-    
 def set_proportional(**kwargs):
     kwargs['returnval']["proportional"] = True
 
@@ -29,7 +26,6 @@ options_map = {
     "-w": set_interval("w"),
     "-m": set_interval("m"),
     "--role": set_role,
-    "--ignore-cache": set_ignore_cache,
     "--proportional": set_proportional
 }
 
@@ -38,7 +34,7 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
     
     args = shlex.split(msgcontent)[1:]
     if len(args) <= 1: 
-        return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
+        return {"error": "Invalid command: not enough arguments. Run `::help` for more info."}
 
     try:
         channel_id = int(args[0])
@@ -46,14 +42,13 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
         if args[0] == "here":
             channel_id = msg.channel.id
         else:
-            return {"error": "Invalid cmd: use `::collect <channel_id|here> <query|\"\"> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
+            return {"error": "Invalid command: first argument must be a channel id or `here`. Run `::help` for more info."}
     
     returnval = {
         "channel_id": channel_id,
         "query": args[1],
         "time_window": "m",
         "role": None,
-        "ignore_cache": False,
         "proportional": False
     }
     
@@ -73,6 +68,6 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
             except:
                 pass
             
-            return {"error": f"Invalid option: `{args[arg_ind]}`. Use `::collect <channel_id|here> <query> [-d/-w/-m] [--role \"<target_role>\"] [--ignore-cache] [--proportional]`"}
+            return {"error": f"Invalid option: `{args[arg_ind]}`. Run `::help` for more info."}
 
     return returnval

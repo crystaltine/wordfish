@@ -1,5 +1,5 @@
 import xlsxwriter
-import override_excel2img as excel2img
+import functions.override_excel2img as excel2img
 from string import ascii_uppercase
 import itertools
 from PIL.ImageFile import ImageFile
@@ -182,11 +182,8 @@ def data_to_graph(
 
     # get chart from workbook as image
     # chart width = 14 cells, height = 16 cells (i think)
-    try:
-        end_col_letter = chr(ord('A') + _excel_num_cols)
-        excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', f'A1:{end_col_letter}{_excel_num_rows}')
-    except Exception as e:
-        raise Exception() # handle this on higher levels
+    end_col_letter = chr(ord('A') + _excel_num_cols)
+    excel2img.export_img(__temp_filename, imgfilename, 'Sheet1', f'A1:{end_col_letter}{_excel_num_rows}')
     # delete excel file
     #import os
     #os.remove('test13.xlsx')

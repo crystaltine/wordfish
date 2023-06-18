@@ -1,11 +1,8 @@
-apikey.py
+_CONSTANTS.py
 tests/
-queryfiles/
 graphimgs/
 cache/
-activityfiles/
 .vscode/
-.__pycache__/
+__pycache__/
 temp.xlsx
-test.png
-.gitignore
+profile/
