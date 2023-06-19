@@ -6,9 +6,10 @@ from xlsxwriter.exceptions import EmptyChartSeries
 from error import send_error_embed
 import _CONSTANTS
 from _CONSTANTS import COLOR_CODE_MAGENTA, COLOR_CODE_YELLOW, COLOR_CODE_RESET
-_cm = COLOR_CODE_MAGENTA
-_cy = COLOR_CODE_YELLOW
-_reset = COLOR_CODE_RESET
+_y = _CONSTANTS.COLOR_CODE_YELLOW
+_r = _CONSTANTS.COLOR_CODE_RED
+_m = _CONSTANTS.COLOR_CODE_MAGENTA
+_x = _CONSTANTS.COLOR_CODE_RESET
 
 from functions.utils import send_msg
 from functions.parse_command import smart_parse_collect_command
@@ -18,7 +19,7 @@ from functions.extract_data import extract_data
 
 async def __read_collect_msg(message: discord.Message, client: discord.Client):
     if message.content.replace('\n', "").startswith("::collect "):
-        print(f"In {_cm}{message.channel.guild}{_reset} > {_cy}{message.channel.name}{_reset}: {message.content} ({_cm}{message.channel.guild.id}{_reset} > {_cy}{message.channel.id}{_reset})")
+        print(f"In {_m}{message.channel.guild}{_x} > {_y}{message.channel.name}{_x}: {message.content} ({_m}{message.channel.guild.id}{_x} > {_y}{message.channel.id}{_x})")
         try:
             
             __exception = None
@@ -36,6 +37,7 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
             channel = client.get_channel(cmdargs["channel_id"])
             role = cmdargs["role"]
             proportional_chart = cmdargs["proportional"]
+            include_bots = cmdargs["include_bots"]
                     
             # If query is empty, then we are collecting activity
             if query == "":
@@ -55,7 +57,8 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
                         unique=False, 
                         role=role, 
                         time=cmdargs["time_window"], 
-                        _for_prop_chart=proportional_chart
+                        _for_prop_chart=proportional_chart,
+                        include_bots=include_bots
                     )
                 except Exception as e:
                     traceback.print_exc()
@@ -79,6 +82,11 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
                     await send_msg(channel=message.channel, embed=_embed)             
                     return 
                 except Exception as e:
+                    print(f"-" * 40 + "> Error <" + "-" * 40)
+                    traceback.print_exc()
+                    print(f"The above occured in server {_m}{message.guild.name}{_x} in channel {_y}{message.channel.name}{_x}")
+                    print(f"Command sent: {_r}{message.content}{_x}")
+                    print(f"-" * 40 + "> Error <" + "-" * 40)
                     await send_error_embed(message.channel, e, "An error occured while generating the graph:\n")         
                     return 
                 
@@ -96,7 +104,8 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
                 unique=False, 
                 role=role, 
                 time=cmdargs["time_window"], 
-                _for_prop_chart=proportional_chart
+                _for_prop_chart=proportional_chart,
+                include_bots=include_bots
             )
             
             extracted_data: tuple = extract_data(data)   
@@ -123,16 +132,10 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
             
             await send_msg(channel=message.channel, embed=_embed, file=file)                   
             return
-        except Exception as e:
-            
-            _y = _CONSTANTS.COLOR_CODE_YELLOW
-            _r = _CONSTANTS.COLOR_CODE_RED
-            _m = _CONSTANTS.COLOR_CODE_MAGENTA
-            _x = _CONSTANTS.RESET
-            
+        except Exception as e:            
             print(f"-" * 40 + "> Error <" + "-" * 40)
             traceback.print_exc()
             print(f"The above occured in server {_m}{message.guild.name}{_x} in channel {_y}{message.channel.name}{_x}")
-            print(f"Command sent: {_reset}{message.content}{_x}")
+            print(f"Command sent: {_r}{message.content}{_x}")
             print(f"-" * 40 + "> Error <" + "-" * 40)
             await send_error_embed(message.channel, e, "The following error occured:\n")

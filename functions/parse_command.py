@@ -20,13 +20,17 @@ def set_role(**kwargs):
 
 def set_proportional(**kwargs):
     kwargs['returnval']["proportional"] = True
+    
+def set_include_bots(**kwargs):
+    kwargs['returnval']["include_bots"] = True
 
 options_map = {
     "-d": set_interval("d"),
     "-w": set_interval("w"),
     "-m": set_interval("m"),
     "--role": set_role,
-    "--proportional": set_proportional
+    "--proportional": set_proportional,
+    "--include-bots": set_include_bots
 }
 
 def smart_parse_collect_command(msg: discord.Message) -> dict:
@@ -49,7 +53,8 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
         "query": args[1],
         "time_window": "m",
         "role": None,
-        "proportional": False
+        "proportional": False,
+        "include_bots": False
     }
     
     # get args

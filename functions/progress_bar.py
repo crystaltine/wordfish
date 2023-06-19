@@ -48,13 +48,13 @@ class ProgressBar():
         
         # Should be included in details:
         # query (emptystr if activity), interval (sentence case like 'Day'), role (optional), proportional_chart (T/F)
-        
         self.prefix_description = f"**Activity scan**\n" if self.details.get("query") is None else f"**Query: ** `{self.details.get('query')}` \n"
         self.prefix_description += f"**Channel: ** {self.details.get('target_channel').mention}\n"
         self.prefix_description += f"**Interval: ** `{self.details.get('interval')}` \n"
         role_mention = f"<@&{self.details.get('role').id}>" if self.details.get('role') else "@everyone"
         self.prefix_description += f"**Filtered to: **{role_mention}\n" 
         self.prefix_description += f"**Chart type: **`{'Proportional' if self.details.get('proportional_chart') else 'Absolute frequency'}` \n" 
+        self.prefix_description += f"**Include bots: **`{'Yes' if self.details.get('include_bots') else 'No'}`\n"
         self.prefix_description += "\n Progress: \n"
         self._last_update_time = ...
         

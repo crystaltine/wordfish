@@ -114,7 +114,6 @@ def export_img(fn_excel, fn_image, page=None, _range=None):
             except (com_error, AttributeError, OSError) as e:
                 # http://stackoverflow.com/questions/24740062/copypicture-method-of-range-class-failed-sometimes
                 # When other (big) Excel documents are open CopyPicture fails intermittently
-                print(e)
                 retries -= 1
                 print(f"retries left: {retries}")
                 if retries == 0: raise Exception("Unable to copy over the chart. Try again soon.")

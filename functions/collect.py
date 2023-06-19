@@ -16,8 +16,8 @@ async def collect(
     unique = False, 
     role: str = None, 
     time: str = "w", 
-    use_cache = True,
-    _for_prop_chart = False
+    _for_prop_chart = False,
+    include_bots = False
     ):
     # If d or w, start based on exact time of first message; m based on calendar month of first message
     _timestamp_0 = 0
@@ -98,69 +98,78 @@ async def collect(
     
     curr_timewindow_start = _timestamp_0
 
-    if use_cache: # always use cache lol, too lazy to reformat
-        try: open(f"cache/{channel.id}.json", "r")
-        except FileNotFoundError: 
-            filename = f"cache/{channel.id}.json"
-            await _write_cache(__orig_msg.channel, filename)
+    # ---------------------#
+    # MAIN DATA COLLECTION #
+    # ---------------------#
+
+    try: open(f"cache/{channel.id}.json", "r")
+    except FileNotFoundError: 
+        filename = f"cache/{channel.id}.json"
+        await _write_cache(__orig_msg.channel, filename)
+    
+    with open(f"cache/{channel.id}.json", "r", encoding='UTF-8') as f:
+        loaded_data = list(json.load(f))
+        loaded_data.pop() # remove timestamp
         
-        with open(f"cache/{channel.id}.json", "r", encoding='UTF-8') as f:
-            loaded_data = list(json.load(f))
-            loaded_data.pop() # remove timestamp
-            
-            # progress bar stuff
-            progress = 0
-            total_messages = len(loaded_data)-1
-            
-            # if no role specified keep it at temp while sorting out invalid roles
-            _role = discord.utils.get(channel.guild.roles, name=role) if role else "temp"
-            if _role is None:
-                await send_error_embed(message.channel, details=f"Role `{role}` does not exist.")
-                return
-            _role = None
-            
-            details = {
-                "target_channel": channel,
-                "query": query,
-                "interval": INTERVAL_NAMES[time],
-                "proportional_chart": _for_prop_chart,
-                "role": _role,
-                "original_channel": __orig_msg.channel,
-            }
-            pbar = ProgressBar(__orig_msg, details=details)
-            await pbar.initialize_message()
-            
-            num_skipped = 0
-            for message in loaded_data: # message is dict
-                try:
-                    sender = message["author"]
-                    sender_id = message["author_id"]
-                    
-                    # parse timestamp
-                    timestamp = parser.parse(message["timestamp"])
-                    
-                    sender_as_member = channel.guild.get_member(sender_id)
-                    if not sender_as_member:
-                        continue
-                    if role and role not in set([r.name for r in sender_as_member.roles]):
-                        continue
-                    
-                    new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
+        # progress bar stuff
+        progress = 0
+        total_messages = len(loaded_data)-1
         
-                    if new_start:
-                        curr_timewindow_start = new_start
-                        curr_data = {}
-                    
-                    ct = _search_queries(message["content"], query)
-                    curr_data[sender] = curr_data.get(sender, 0) + ct
-                    
-                    progress += 1
-                    await pbar.update(progress / total_messages)
-                except Exception as e:
-                    print(f"Error while parsing message in collect: {e}")
-                    num_skipped += 1
+        # if no role specified keep it at temp while sorting out invalid roles
+        _role = "temp-no-role" if not role else discord.utils.get(channel.guild.roles, name=role)
+        if _role is None: # Role was provided but does not exist
+            await send_error_embed(message.channel, details=f"Role `{role}` does not exist. Make sure the parameter is the name of a role (not its @mention) in double quotes.")
+            return
+        if not role: _role = None # If no role specified, set to None
+        
+        details = {
+            "target_channel": channel,
+            "query": query,
+            "interval": INTERVAL_NAMES[time],
+            "proportional_chart": _for_prop_chart,
+            "role": _role,
+            "original_channel": __orig_msg.channel,
+            "include_bots": include_bots
+        }
+        pbar = ProgressBar(__orig_msg, details=details)
+        await pbar.initialize_message()
+        
+        num_skipped = 0
+        for message in loaded_data: # message is dict
+            try:
+                sender = message["author"]
+                sender_id = message["author_id"]
+                
+                # parse timestamp
+                timestamp = parser.parse(message["timestamp"])
+                
+                sender_as_member = channel.guild.get_member(sender_id)
+                if not sender_as_member:
                     continue
-            _embed, _msg = await pbar.update(1)
+                
+                # if include_bots is true, skip if sender is bot
+                if sender_as_member.bot and not include_bots:
+                    continue
+                
+                if role and role not in set([r.name for r in sender_as_member.roles]):
+                    continue
+                
+                new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
+    
+                if new_start:
+                    curr_timewindow_start = new_start
+                    curr_data = {}
+                
+                ct = _search_queries(message["content"], query)
+                curr_data[sender] = curr_data.get(sender, 0) + ct
+                
+                progress += 1
+                await pbar.update(progress / total_messages)
+            except Exception as e:
+                print(f"Error while parsing message in collect: {e}")
+                num_skipped += 1
+                continue
+        _embed, _msg = await pbar.update(1)
     # save last time window
     data[str(curr_timewindow_start)] = curr_data
     

@@ -115,14 +115,14 @@ def data_to_graph(
         _col_name_ranges(30) -> ['B', 'C', 'D', ... , 'Z', 'AA', ... , 'AE']
         ```
         """
-        _ct = 0
+        _ct = -1
         for size in itertools.count(1):
             for s in itertools.product(ascii_uppercase, repeat=size):
-                if _ct < num:
-                    yield (chr(ord(''.join(s))+1), _ct)
-                    _ct += 1
-                    continue
-                return    
+                if _ct == num:
+                    return
+                if _ct == -1: _ct = 0; continue
+                yield ("".join(s), _ct)
+                _ct += 1
 
     # write timestamps in col 1
     worksheet.write_column('A2', timestamps)
@@ -138,6 +138,7 @@ def data_to_graph(
 
     for colname, idx in _col_name_ranges(len(names)):
         # write data
+        
         worksheet.write_column(f'{colname}2', data[idx])
         
         # add series to chart
