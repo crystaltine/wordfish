@@ -19,8 +19,7 @@ Proportional graph of activity, sorted by day:
 https://discord.com/api/oauth2/authorize?client_id=1094453223278002259&permissions=248832&scope=bot
 
 Run `::help` in your server!
-
-#### *To scan channels invisible to `@everyone` Wordfish must be manually given those permissions.*
+*To scan channels invisible to `@everyone` Wordfish must be manually given those permissions.*
 
 ## Issues
 
