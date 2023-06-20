@@ -2,7 +2,10 @@
 
 Interesting insights and charts about the usage of certain words or activity in a discord channel over time.
 
-An example for monthly activity:
+## Examples
+*(for obvious reasons, the legend (usernames) are hidden in these examples)*
+
+An example for monthly activity from 5 people:
 ![Example graph](https://i.imgur.com/YeLQDcI.png)
 
 Searching for the word "bad" by week:

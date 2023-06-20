@@ -51,8 +51,26 @@ class ProgressBar():
         self.prefix_description = f"**Activity scan**\n" if self.details.get("query") is None else f"**Query: ** `{self.details.get('query')}` \n"
         self.prefix_description += f"**Channel: ** {self.details.get('target_channel').mention}\n"
         self.prefix_description += f"**Interval: ** `{self.details.get('interval')}` \n"
-        role_mention = f"<@&{self.details.get('role').id}>" if self.details.get('role') else "@everyone"
-        self.prefix_description += f"**Filtered to: **{role_mention}\n" 
+        
+        __role_param: list[discord.Role] = self.details.get('role')
+        
+        if type(__role_param) == discord.Role:
+            role_mention = f"<@&{__role_param.id}>"
+            # check if the role is from another server
+            if __role_param.guild.id != self.message.guild.id:
+                role_mention = f"{__role_param.guild.name}>{role_mention}"
+            self.prefix_description += f"**Filtered to: **{role_mention}\n"
+        elif type(__role_param) == list:
+            role_mentions = [f"<@&{role.id}>" for role in __role_param]
+            
+            for i in range(len(__role_param)):
+                if __role_param[i].guild.id != self.message.guild.id:
+                    role_mentions[i] = f"{__role_param[i].guild.name}>{__role_param[i].mention}"
+            
+            self.prefix_description += f"**Filtered to: **{', '.join(role_mentions)}\n"
+        else:
+            self.prefix_description += f"**Filtered to: **@everyone\n"
+        
         self.prefix_description += f"**Chart type: **`{'Proportional' if self.details.get('proportional_chart') else 'Absolute frequency'}` \n" 
         self.prefix_description += f"**Include bots: **`{'Yes' if self.details.get('include_bots') else 'No'}`\n"
         self.prefix_description += "\n Progress: \n"

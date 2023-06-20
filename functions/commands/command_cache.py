@@ -26,7 +26,7 @@ async def __read_cache_msg(message: discord.Message, client: discord.Client) -> 
             if not _channel: # user specified an invalid channel
                 await send_error_embed(
                     message.channel,
-                    details=f"Channel with id `{message.content.split(' ')[1]}` was not found. Double check the channel ID and make sure Wordfish is present in the specified channel's server."
+                    details=f"Channel with id `{message.content.split(' ')[1]}` was not found. Double check the channel ID and make sure Wordfish has view/write permissions in the specified channel's server."
                 )
                 return
             

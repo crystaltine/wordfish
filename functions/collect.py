@@ -4,7 +4,7 @@ from datetime import timezone
 import json
 from dateutil import parser
 
-from error import send_error_embed
+from error import send_error_embed, send_warning_embed
 from functions.progress_bar import ProgressBar
 from functions.utils import _advance_one_month, _match_day, INTERVAL_NAMES, _search_queries
 from functions.write_cache import _write_cache
@@ -14,16 +14,22 @@ async def collect(
     query: str, 
     __orig_msg: discord.Message,
     unique = False, 
-    role: str = None, 
+    role: str | list = None, 
     time: str = "w", 
     _for_prop_chart = False,
     include_bots = False
     ):
     # If d or w, start based on exact time of first message; m based on calendar month of first message
-    _timestamp_0 = 0
+    _timestamp_0 = None
     async for message in channel.history(limit=1, oldest_first=True):
         _timestamp_0 = message.created_at
         break
+    
+    if _timestamp_0 is None:
+        send_error_embed(
+            __orig_msg.channel,
+            details=f"No messages found in channel {channel.mention}!"
+        )
     
     if time == "m":
         _timestamp_0 = _timestamp_0.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -105,7 +111,7 @@ async def collect(
     try: open(f"cache/{channel.id}.json", "r")
     except FileNotFoundError: 
         filename = f"cache/{channel.id}.json"
-        await _write_cache(__orig_msg.channel, filename)
+        await _write_cache(channel, filename, send_embed_to=__orig_msg.channel)
     
     with open(f"cache/{channel.id}.json", "r", encoding='UTF-8') as f:
         loaded_data = list(json.load(f))
@@ -116,10 +122,21 @@ async def collect(
         total_messages = len(loaded_data)-1
         
         # if no role specified keep it at temp while sorting out invalid roles
-        _role = "temp-no-role" if not role else discord.utils.get(channel.guild.roles, name=role)
-        if _role is None: # Role was provided but does not exist
-            await send_error_embed(message.channel, details=f"Role `{role}` does not exist. Make sure the parameter is the name of a role (not its @mention) in double quotes.")
-            return
+        
+        if type(role) == list:
+            _role = []
+            for _r in role:
+                newrole = discord.utils.get(channel.guild.roles, name=_r)
+                if newrole is None:
+                    await send_error_embed(__orig_msg.channel, details=f"Role '{_r}' does not exist in server '{channel.guild.name}'. Make sure the parameter is the name of a role (not its @mention) in double quotes.")
+                    return
+                _role.append(newrole)
+
+        else:
+            _role = "temp-no-role" if not role else discord.utils.get(channel.guild.roles, name=role)
+            if _role is None: # Role was provided but does not exist
+                await send_error_embed(__orig_msg.channel, details=f"Role '{role}' does not exist in server '{channel.guild.name}'. Make sure the parameter is the name of a role (not its @mention) in double quotes.")
+                return
         if not role: _role = None # If no role specified, set to None
         
         details = {
@@ -135,6 +152,7 @@ async def collect(
         await pbar.initialize_message()
         
         num_skipped = 0
+        num_members_tracked = 0 # once over 100, stop tracking members
         for message in loaded_data: # message is dict
             try:
                 sender = message["author"]
@@ -151,7 +169,8 @@ async def collect(
                 if sender_as_member.bot and not include_bots:
                     continue
                 
-                if role and role not in set([r.name for r in sender_as_member.roles]):
+                if type(role) == "str" and role not in set([r.name for r in sender_as_member.roles]) or \
+                type(role) == list and not any([r in set([r.name for r in sender_as_member.roles]) for r in role]):
                     continue
                 
                 new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)
@@ -161,7 +180,17 @@ async def collect(
                     curr_data = {}
                 
                 ct = _search_queries(message["content"], query)
-                curr_data[sender] = curr_data.get(sender, 0) + ct
+                try:
+                    curr_data[sender] = curr_data.get(sender) + ct
+                except TypeError:
+                    if num_members_tracked < 100:
+                        curr_data[sender] = ct
+                    else:
+                        # send warning embed
+                        await send_warning_embed(
+                            send_to_channel=__orig_msg.channel,
+                            details=f"Stopped tracking new users after 100 unique detections. Use `--roles` (see `::help`) to filter to specific users.",
+                        )
                 
                 progress += 1
                 await pbar.update(progress / total_messages)

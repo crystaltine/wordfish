@@ -1,4 +1,4 @@
-import shlex, discord
+import discord, re
 
 def set_interval(time_window: str = "w"):
     def inner(**kwargs):
@@ -7,36 +7,50 @@ def set_interval(time_window: str = "w"):
 
 def set_role(**kwargs):
     
-    args_list = kwargs['args_list'][2:]
+    args_list = kwargs['args_list'][2:] # remove the first two elements, which are required ones
     returnval = kwargs['returnval']
     
-    role_option_index = args_list.index("--role")
+    role_option_index = args_list.index("--roles")
     
     if len(args_list) <= role_option_index + 1:
-        returnval["error"] = "Invalid role: `--role` must be followed by a role name, in quotes (without @). Run ::help for more info."
+        returnval["error"] = "Invalid role: `--roles` must be followed by a role name, in quotes (without @) or a list of quoted role names, in square brackets ([]). Run ::help for more info."
     else:
-        role_to_add = str(args_list[role_option_index + 1])
+        role_params: str = args_list[role_option_index + 1]
+        
+        if role_params.startswith('[') and role_params.endswith(']'): # if list of roles
+            _raw_list = role_params.strip('[]').split(',')
+            rolenames = []
+            for string in _raw_list:
+                rolenames.append(string.strip(" \"")) # remove quotes and spaces
+
+            returnval["role"] = rolenames
+            return
+        role_to_add = str(role_params)
         returnval["role"] = role_to_add
 
-def set_proportional(**kwargs):
-    kwargs['returnval']["proportional"] = True
-    
-def set_include_bots(**kwargs):
-    kwargs['returnval']["include_bots"] = True
+def set_param(option, value):
+    def __set(**kwargs):
+        kwargs['returnval'][option] = value
+    return __set
 
 options_map = {
     "-d": set_interval("d"),
     "-w": set_interval("w"),
     "-m": set_interval("m"),
-    "--role": set_role,
-    "--proportional": set_proportional,
-    "--include-bots": set_include_bots
+    "--roles": set_role,
+    "--proportional": set_param("proportional", True),
+    "--include-bots": set_param("include_bots", True)
 }
 
 def smart_parse_collect_command(msg: discord.Message) -> dict:
-    msgcontent = msg.content.strip()
+    msgcontent = msg.content.strip().replace('\n', " ")
     
-    args = shlex.split(msgcontent)[1:]
+    pattern = r'(\[.*?\]|\".*?\"|\S+)'
+    result: list[str] = re.findall(pattern, msgcontent)
+    for _ in range(len(result)):
+        result[_] = result[_].strip("\"")
+    args = result[1:]
+
     if len(args) <= 1: 
         return {"error": "Invalid command: not enough arguments. Run `::help` for more info."}
 
@@ -65,10 +79,10 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
                 returnval=returnval
             )
         else:
-            # check if --role is before it
+            # check if --roles is before it
             try:
-                if args[arg_ind-1] == "--role":
-                    options_map["--role"](args_list=args, returnval=returnval)
+                if args[arg_ind-1] == "--roles":
+                    options_map["--roles"](args_list=args, returnval=returnval)
                     continue
             except:
                 pass
