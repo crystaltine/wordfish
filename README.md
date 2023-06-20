@@ -20,7 +20,7 @@ https://discord.com/api/oauth2/authorize?client_id=1094453223278002259&permissio
 
 Run `::help` in your server!
 
-### *To scan channels invisible to `@everyone` Wordfish must be manually given those permissions.*
+#### *To scan channels invisible to `@everyone` Wordfish must be manually given those permissions.*
 
 ## Issues
 
