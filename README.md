@@ -14,8 +14,14 @@ Searching for the word "bad" by week:
 Proportional graph of activity, sorted by day:
 ![Example proportional graph](https://i.imgur.com/EUGK1xh.png)
 
-Invite link: https://discord.com/api/oauth2/authorize?client_id=1094453223278002259&permissions=248832&scope=bot
+## Invite:
+
+https://discord.com/api/oauth2/authorize?client_id=1094453223278002259&permissions=248832&scope=bot
 
 Run `::help` in your server!
 
-**This bot is still in beta - report any issues with GitHub's issues feature.**
+### *To scan channels invisible to `@everyone` Wordfish must be manually given those permissions.*
+
+## Issues
+
+**This bot is still in beta - report any issues with GitHub's issues feature. (or dm me on discord you probably know me since this is a beta release)**
