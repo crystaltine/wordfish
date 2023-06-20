@@ -72,7 +72,7 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
                 traceback.print_exc()
                 _role = discord.utils.get(channel.guild.roles, name=role) if role else None
                 _embed.title = f":jar: No data found for the given parameters!"
-                _embed.description = _embed.description[:-16]
+                _embed.description = _embed.description[:-19]
                 _embed.color = 0xffff00
                 await send_msg(channel=message.channel, embed=_embed)             
                 return 
@@ -87,9 +87,8 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
             
             file = discord.File(_filename, filename='image.png')
             _embed.set_image(url="attachment://image.png")
-            await _msg.delete()
-            _embed.description = _embed.description[:-16]
-            await send_msg(channel=message.channel, embed=_embed, file=file)                   
+            _embed.description = _embed.description[:-19]    
+            await _msg.edit(embed=_embed, attachments=[file])            
             return            
 
         data, _embed, _msg = await collect(
@@ -115,7 +114,7 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
             await _msg.delete()
             _role = discord.utils.get(channel.guild.roles, name=role) if role else None
             _embed.title = f":jar: {f'No data found for the given parameters!'}"
-            _embed.description = _embed.description[:-16]
+            _embed.description = _embed.description[:-1]
             _embed.color = 0xffff00
             await send_msg(channel=message.channel, embed=_embed)             
             return 
@@ -123,7 +122,7 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
         file = discord.File(_filename, filename='image.png')            
         _embed.set_image(url="attachment://image.png")
         await _msg.delete()
-        _embed.description = _embed.description[:-16]
+        _embed.description = _embed.description[:-19]
         
         await send_msg(channel=message.channel, embed=_embed, file=file)                   
         return

@@ -5,9 +5,33 @@ import datetime
 from datetime import timezone
 from time import sleep
 from dateutil import parser
+from error import send_error_embed
 from functions.utils import send_msg
 
-async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_to: discord.TextChannel = None):   
+async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_to: discord.TextChannel = None):
+    
+    # Check if Wordfish has permission to read messages in the channel
+    if not channel.permissions_for(channel.guild.me).read_message_history:
+        # Send error message
+        if channel.guild.id != send_embed_to.guild.id:
+            await send_error_embed(
+                send_to_channel=send_embed_to,
+                details=f"Wordfish does not have permission to read `{channel.guild.name}> #{channel.name}`!",
+            )
+            return
+        await send_error_embed(
+            send_to_channel=send_embed_to,
+            details=f"Wordfish does not have permission to read {channel.mention}!",
+        )
+        return
+    
+    # if wordfish isnt in the server, send error message
+    if not channel.guild.me:
+        await send_error_embed(
+            send_to_channel=send_embed_to,
+            details=f"Wordfish is not in server `{channel.guild.name}`!",
+        )
+        return
     
     if not send_embed_to:
         send_embed_to = channel

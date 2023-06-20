@@ -87,6 +87,8 @@ def smart_parse_collect_command(msg: discord.Message) -> dict:
             except:
                 pass
             
-            return {"error": f"Invalid option: `{args[arg_ind]}`. Run `::help` for more info."}
+            if args[arg_ind] == ",": # they probably forgot to put brackets around role names
+                return {"error": f"Invalid option: `{args[arg_ind]}`. Did you forget to put square brackets around the specified roles? Run `::help` for more info."}
+            else: return {"error": f"Invalid option: `{args[arg_ind]}`. Run `::help` for more info."}
 
     return returnval

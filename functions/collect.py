@@ -20,8 +20,6 @@ async def collect(
     include_bots = False
     ):
     
-    print(f"Using role(s) {role}, type {type(role)}")
-    
     # If d or w, start based on exact time of first message; m based on calendar month of first message
     _timestamp_0 = None
     async for message in channel.history(limit=1, oldest_first=True):
@@ -155,6 +153,7 @@ async def collect(
         await pbar.initialize_message()
         
         __num_skipped = num_members_tracked = 0 # (once over 100, stop tracking members)
+        
         for message in loaded_data: # message is dict
             progress += 1
             await pbar.update(progress / total_messages)
@@ -173,8 +172,10 @@ async def collect(
                 if sender_as_member.bot and not include_bots:
                     continue
                 
-                if (type(role) == "str" and role not in set([r.name for r in sender_as_member.roles])) or \
-                (type(role) == list and not all([r in set([r.name for r in sender_as_member.roles]) for r in role])):
+                member_roles = set([r.name for r in sender_as_member.roles])
+                
+                if (type(role) == str and (role not in member_roles)) or \
+                (type(role) == list and not all([r in member_roles for r in role])):
                     continue
                 
                 new_start = _check_advance_window(time, timestamp, curr_timewindow_start, data, curr_data)

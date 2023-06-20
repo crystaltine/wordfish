@@ -29,8 +29,9 @@ def run_discord_bot():
         # Ignore messages from self
         if message.author == client.user:
             return
+        
         try:
-            await handle_msg(message, client)
+            await handle_msg(message, client)       
         except Exception as e:        
             print(f"-" * 40 + "> Error <" + "-" * 40)
             traceback.print_exc()

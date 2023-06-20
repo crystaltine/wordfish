@@ -58,16 +58,18 @@ class ProgressBar():
             role_mention = f"<@&{__role_param.id}>"
             # check if the role is from another server
             if __role_param.guild.id != self.message.guild.id:
-                role_mention = f"{__role_param.guild.name}>{__role_param.name}"
+                role_mention = f"`{__role_param.guild.name}> @{__role_param.name}`"
             self.prefix_description += f"**Filtered to: **{role_mention}\n"
         elif type(__role_param) == list:
             role_mentions = [f"<@&{role.id}>" for role in __role_param]
             
-            for i in range(len(__role_param)):
-                if __role_param[i].guild.id != self.message.guild.id:
-                    role_mentions[i] = f"{__role_param[i].guild.name}>{__role_param[i].name}"
+            if __role_param[0].guild.id != self.message.guild.id: # from different server, make blue
             
-            self.prefix_description += f"**Filtered to: **{', '.join(role_mentions)}\n"
+                for i in range(len(__role_param)):
+                    role_mentions[i] = f"{__role_param[i].guild.name}> @{__role_param[i].name}"
+            
+                self.prefix_description += f"**Filtered to: **`{', '.join(role_mentions)}`\n"
+            else: self.prefix_description += f"**Filtered to: **{', '.join(role_mentions)}\n"
         else:
             self.prefix_description += f"**Filtered to: **@everyone\n"
         
@@ -91,9 +93,6 @@ class ProgressBar():
             return False
         
         if new_progress >= 1:
-            
-            # TODO: fix it not updating the last time
-            
             if datetime.datetime.now(timezone.utc) - self._last_update_time < datetime.timedelta(seconds=1):
                 # wait and then do the final update
                 sleep_time = 1 - (datetime.datetime.now(timezone.utc) - self._last_update_time).total_seconds()
@@ -106,7 +105,7 @@ class ProgressBar():
             self.embed.description = self.embed.description[:-12]
             
             # add 'Loading graph...'
-            self.embed.description += "Loading image..."
+            self.embed.description += "## Loading image..."
             
             await self.sent.edit(embed=self.embed)
             self._last_update_time = datetime.datetime.now(timezone.utc)
