@@ -42,16 +42,8 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
         proportional_chart = cmdargs["proportional"]
         include_bots = cmdargs["include_bots"]
                 
-        # If query is empty, then we are collecting activity
-        if query == "":
-            
-            # confirmation message removed; progress bar embed is sent instead
-            #await send_msg(
-            #    message.channel,
-            #    f"Scanning activity in `{channel.name}`, interval: `{cmdargs['time_window']}`, messages from `{'role: ' + role if role else 'everyone'}`, proportional chart: `{proportional_chart}`...",
-            #    replyto=message            
-            #)
-                    
+        # If query is empty, then collect activity
+        if query == "":                    
             try:
                 data, _embed, _msg = await collect(
                     channel, 
