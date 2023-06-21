@@ -1,3 +1,4 @@
+import traceback
 import discord
 import datetime
 from datetime import timezone
@@ -154,6 +155,7 @@ async def collect(
         
         __num_skipped = num_members_tracked = 0 # (once over 100, stop tracking members)
         
+        member_overflow_warning_flag = False
         for message in loaded_data: # message is dict
             progress += 1
             await pbar.update(progress / total_messages)
@@ -187,17 +189,19 @@ async def collect(
                 ct = _search_queries(message["content"], query)
                 try:
                     curr_data[sender] = curr_data.get(sender) + ct
-                except TypeError:
-                    if num_members_tracked < 100:
+                except TypeError: # if curr_data[sender] is None
+                    if num_members_tracked < 50:
                         curr_data[sender] = ct
-                    else:
+                    elif not member_overflow_warning_flag:
                         # send warning embed
                         await send_warning_embed(
                             send_to_channel=__orig_msg.channel,
-                            details=f"Stopped tracking new users after 100 unique detections. Use `--roles` (see `::help`) to filter to specific users.",
+                            details=f"Stopped tracking new users after 55 unique detections. Use `--roles` (see `::help`) to filter to specific users.",
                         )
+                        member_overflow_warning_flag = True
             except Exception as e:
                 print(f"Error while parsing message in collect: {e}")
+                traceback.print_exc()
                 __num_skipped += 1
                 continue
         _embed, _msg = await pbar.update(1)
