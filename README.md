@@ -34,6 +34,7 @@ Once added, if Wordfish is online (I'm currently hosting on a home laptop lmao),
 
 *In no particular order - this is mostly a todo list for me*
 + Better command format that doesn't look like a nuclear launch code lol
++ Ensured compatibility with megathreads and not just channels
 + A queue for channel cache (Discord API has a really low rate limit when it comes to scanning channels, and it gets split among everyone using the bot)
 + Ability to concatenate by role group (total activity/word usage from all @Moderators, @Level 10, etc. combined into one group on the chart)
 + Customizable chart themes (colors, fonts, etc.)
