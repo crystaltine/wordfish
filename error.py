@@ -1,6 +1,9 @@
 import discord
 
-async def send_error_embed(send_to_channel: discord.TextChannel, exception: Exception = None, details: str = None):    
+async def send_error_embed(send_to_channel: discord.TextChannel, exception: Exception = None, details: str = None):
+    """
+    `details` is visually on top of `exception` in the embed
+    """
     embed = discord.Embed(
         title=":x: Error", 
         description=f"{details if details else ''}{('```' + str(exception) + '```') if exception else ''}\n",

@@ -33,7 +33,7 @@ async def __read_collect_msg(message: discord.Message, client: discord.Client):
         if cmdargs["channel_id"] == 532899347234:
             await send_error_embed(
                 message.channel,
-                details="nice try nerd"
+                details="nice try nerd (that's just a random number btw, not a real channel id)"
             )
             return                         
         channel = client.get_channel(cmdargs["channel_id"])

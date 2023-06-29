@@ -2,6 +2,11 @@ import json, sys
 from datetime import datetime
 from datetime import timezone, timedelta
 
+"""
+This file isn't used anymore since I don't need to manually create the excel files anymore.
+I spent too long making this tho so im keeping it :)
+"""
+
 def convert_raw_json(filename: str = None, raw_json_data: dict = None) -> dict[str, list]:
     """
         Takes a raw timestamped JSON file with date keys and frequency (based on users) values (stored in a dict)

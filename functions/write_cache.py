@@ -10,6 +10,14 @@ from functions.utils import send_msg
 
 async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_to: discord.TextChannel = None):
     
+    # if wordfish isnt in the server, send error message
+    if not channel.guild.me:
+        await send_error_embed(
+            send_to_channel=send_embed_to,
+            details=f"Wordfish is not in server `{channel.guild.name}`!",
+        )
+        return
+    
     # Check if Wordfish has permission to read messages in the channel
     if not channel.permissions_for(channel.guild.me).read_message_history:
         # Send error message
@@ -22,14 +30,6 @@ async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_t
         await send_error_embed(
             send_to_channel=send_embed_to,
             details=f"Wordfish does not have permission to read {channel.mention}!",
-        )
-        return
-    
-    # if wordfish isnt in the server, send error message
-    if not channel.guild.me:
-        await send_error_embed(
-            send_to_channel=send_embed_to,
-            details=f"Wordfish is not in server `{channel.guild.name}`!",
         )
         return
     

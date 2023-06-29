@@ -32,6 +32,7 @@ async def collect(
             __orig_msg.channel,
             details=f"No messages found in channel {channel.mention}!"
         )
+        # No need to throw a top level error here, no issues with the bot
     
     if time == "m":
         _timestamp_0 = _timestamp_0.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -74,6 +75,7 @@ async def collect(
         
         loaded_data: ...
         
+        # Month is different because we want to start a new month when the month changes, not in increments after the first message
         if time == "m" and timestamp.month != curr_timewindow_start.month:            
             data[str(curr_timewindow_start)] = curr_data.copy()
             
@@ -88,6 +90,8 @@ async def collect(
                 
             return curr_timewindow_start.replace(year=timestamp.year, month=timestamp.month)
         
+        # for day and week, we want to start a new time window when the timestamp is more than-
+        # 1 day or 1 week after the current time window start instead of when the day or week changes
         elif time != "m":
             _timedel = datetime.timedelta(days=1) if time == "d" else datetime.timedelta(weeks=1)
             if timestamp > curr_timewindow_start + _timedel:
@@ -95,7 +99,7 @@ async def collect(
                 data[str(curr_timewindow_start)] = curr_data.copy()                
                 curr_data = {}
                 
-                # Keep going up by 1 week until we reach timestamp (before we hit)
+                # Keep going up by 1 week/day until we reach timestamp (before we hit)
                 while timestamp > curr_timewindow_start + _timedel:
                     curr_timewindow_start += _timedel
                     data[str(curr_timewindow_start)] = {}
@@ -111,21 +115,20 @@ async def collect(
     # ---------------------#
 
     try: open(f"cache/{channel.id}.json", "r")
-    except FileNotFoundError: 
+    except FileNotFoundError: # Write a new cache file if it doesnt exist yet
         filename = f"cache/{channel.id}.json"
         await _write_cache(channel, filename, send_embed_to=__orig_msg.channel)
     
     with open(f"cache/{channel.id}.json", "r", encoding='UTF-8') as f:
         loaded_data = list(json.load(f))
-        loaded_data.pop() # remove timestamp
+        loaded_data.pop() # remove the temporary timestamp at the end
         
         # progress bar stuff
         progress = 0
         total_messages = len(loaded_data)-1
         
-        # if no role specified keep it at temp while sorting out invalid roles
-        
-        if type(role) == list:
+        # if no role specified keep it at "temp-no-role" while sorting out invalid roles  
+        if type(role) == list: # multiple roles were specified
             _role = []
             for _r in role:
                 newrole = discord.utils.get(channel.guild.roles, name=_r)
@@ -134,7 +137,7 @@ async def collect(
                     return
                 _role.append(newrole)
 
-        else:
+        else: # only one role was specified
             _role = "temp-no-role" if not role else discord.utils.get(channel.guild.roles, name=role)
             if _role is None: # Role was provided but does not exist
                 await send_error_embed(__orig_msg.channel, details=f"Role '{role}' does not exist in server '{channel.guild.name}'. Make sure the parameter is the name of a role (not its @mention) in double quotes.")
@@ -153,10 +156,10 @@ async def collect(
         pbar = ProgressBar(__orig_msg, details=details)
         await pbar.initialize_message()
         
-        __num_skipped = num_members_tracked = 0 # (once over 100, stop tracking members)
+        __num_skipped = num_members_tracked = 0 # (once over 50, stop tracking members since graph runs out of space)
         
         member_overflow_warning_flag = False
-        for message in loaded_data: # message is dict
+        for message in loaded_data: # message should be dict loaded from the cache json
             progress += 1
             await pbar.update(progress / total_messages)
             try:
@@ -196,12 +199,14 @@ async def collect(
                         # send warning embed
                         await send_warning_embed(
                             send_to_channel=__orig_msg.channel,
-                            details=f"Stopped tracking new users after 55 unique detections. Use `--roles` (see `::help`) to filter to specific users.",
+                            details=f"Stopped tracking new users after 50 unique detections. Use `--roles` (see `::help`) to filter to specific role groups.",
                         )
                         member_overflow_warning_flag = True
             except Exception as e:
+                print("-"*40 + "> Error <" + "-"*40)
                 print(f"Error while parsing message in collect: {e}")
                 traceback.print_exc()
+                print("-"*40 + "> Error <" + "-"*40)
                 __num_skipped += 1
                 continue
         _embed, _msg = await pbar.update(1)

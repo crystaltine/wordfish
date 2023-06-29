@@ -1,9 +1,7 @@
 import discord
-import asyncio
 import datetime
 from datetime import timezone
 from time import sleep
-from error import send_error_embed
 
 async def _send_msg(channel: discord.TextChannel, message: str = "", replyto: discord.Message = None, embed: discord.Embed = None):
     # return the sent message
