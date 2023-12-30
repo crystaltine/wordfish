@@ -55,7 +55,7 @@ async def collect(
             curr += _dtime
             
     else:
-        while curr.month <= runtime_timestamp.month:
+        while curr.month <= runtime_timestamp.month and curr.year <= runtime_timestamp.year:
             _start_of_month = curr.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             data[str(_start_of_month)] = {}
             curr = _advance_one_month(curr)
