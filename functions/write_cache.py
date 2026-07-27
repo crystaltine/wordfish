@@ -39,7 +39,7 @@ async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_t
     # if cache file already exists, only get messasges after the last timestamp
     messages = []
     after = None
-    orig_len = None
+    orig_len = 0
 
     if os.path.exists(filename):
         with open(filename, "r", encoding='UTF-8') as f:
@@ -65,15 +65,16 @@ async def _write_cache(channel: discord.TextChannel, filename: str, send_embed_t
         
         _timestamp = datetime.datetime.now(timezone.utc)
         if _timestamp - last_info_update > datetime.timedelta(seconds=1):
-            rate = len(messages) / (_timestamp - init_timestamp).total_seconds() # messages per second
+            rate = (len(messages) - orig_len) / (_timestamp - init_timestamp).total_seconds() # messages per second
             hours_taken = int((_timestamp - init_timestamp).total_seconds() // 3600)
             minutes_taken = int(((_timestamp - init_timestamp).total_seconds() % 3600) // 60)
             seconds_taken = round(((_timestamp - init_timestamp).total_seconds() % 3600) % 60, 2)
+            timestamp_of_latest_msg = msg.created_at.isoformat()
             
             elapsed_time_str = f"{hours_taken}h {minutes_taken}m {seconds_taken}s"
             info_embed.description = f"Adding to cache dated {after} with {len(messages)} messages...\n\n" \
                 if after else ""
-            info_embed.description += f"**Scanned messages:** {'{:,}'.format(len(messages))}\n**Rate:** {rate:.2f} messages/sec\n**Elapsed Time:** {elapsed_time_str}"
+            info_embed.description += f"**Scanned messages:** {'{:,}'.format(len(messages))}\n**Rate:** {rate:.2f} messages/sec\n**Elapsed Time:** {elapsed_time_str}\n**Latest Message Scanned:** {timestamp_of_latest_msg}"
             await sent.edit(embed=info_embed)
             last_info_update = _timestamp
     final_timestamp = datetime.datetime.now(timezone.utc)
